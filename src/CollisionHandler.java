@@ -1,7 +1,7 @@
 import javax.vecmath.*;
 
 public class CollisionHandler {
-	private static final float COEFFICIENT_OF_RESTITUTION = .9f;
+	private static final float COEFFICIENT_OF_RESTITUTION = 0f;
 	
 	public static void checkAndResolveCollision(PhysicsObject a, PhysicsObject b) {
 		CollisionInfo ci = getCollisionInfo(a, b);
@@ -121,54 +121,81 @@ public class CollisionHandler {
     private static CollisionInfo getCollision(Circle a, Triangle b) {
         Vector2f[] normal = b.getNormals();
         Vector2f[] point = b.getVertices();
+        float[] pointDistance = new float[3];
+        float minPointDistance = Float.POSITIVE_INFINITY;
+        int minPointDistanceIndex = 0;
 
-        //collide with corners
-        Vector2f n = new Vector2f();
+        //corners
+        Vector2f[] n = new Vector2f[3];
         for(int i = 0; i < point.length; i++) {
-            n.scaleAdd( -1 , a.position , point[i] );
-            float distance = n.length() - a.radius;
+            n[i] = new Vector2f();
+            n[i].scaleAdd( -1 , a.position , point[i] );
+            pointDistance[i] = n[i].length() - a.radius;
 
-            if (distance < 0) { //assume this is the only point it's overlapping with
-                CollisionInfo ci = new CollisionInfo();
-                n.normalize();
-                ci.normal = n;
-                ci.depth = -distance;
-                ci.position = new Vector2f();
-                ci.position.scaleAdd(a.radius - ci.depth / 2, ci.normal, a.position);
-                return ci;
+            if (pointDistance[i] < minPointDistance) { //assume this is the only point it's overlapping with
+                minPointDistance = pointDistance[i];
+                minPointDistanceIndex = i;
             }
         }
-
-        //collide with edges
-        float[] intercept = new float[3];
-        float[] distances = new float[3];
-        boolean noCollision = false;
-        for(int i = 0; i < 3; i++) {
-            intercept[i] = point[i].dot(normal[i]);
-            distances[i] = normal[i].dot(a.position) - intercept[i] - a.radius;
-            if(distances[i] >= 0)
-                noCollision = true;
-        }
-
-        //select closest distance
-        float minDistance = distances[0];
-        int index = 0;
-        for(int i = 1; i < distances.length; i++) {
-            if(distances[i] < minDistance) {
-                index = i;
-                minDistance = distances[i];
-            }
-        }
-
-        if (!noCollision) {
-            System.out.println("collision " + minDistance);
+         if(minPointDistance < 0) {
             CollisionInfo ci = new CollisionInfo();
-            ci.normal = normal[index];
-            ci.depth = -minDistance;
+            n[minPointDistanceIndex].normalize();
+            ci.normal = n[minPointDistanceIndex];
+            ci.depth = -minPointDistance;
             ci.position = new Vector2f();
-            ci.position.scaleAdd((a.radius - ci.depth / 2), ci.normal, a.position);
+            ci.position.scaleAdd(a.radius - ci.depth, ci.normal, a.position);
             return ci;
         }
+
+        //inside
+        boolean inside = true;
+        float[] intercept = new float[3];
+        float[] distances = new float[3];
+        for(int i = 0; i < normal.length; i++) {
+            intercept[i] = normal[i].dot(point[i]);
+            distances[i] = normal[i].dot(a.position) - intercept[i];// + a.radius;
+            if(distances[i] >= 0)
+                inside = false;
+        }
+        //collision point generation is of questionable correctness
+        if(inside) {
+            CollisionInfo ci = new CollisionInfo();
+            Vector2f t = new Vector2f();
+            t.scaleAdd(-1,a.centerOfMass,b.centerOfMass);
+            t.normalize();
+            ci.normal = t;
+            ci.depth = -t.length();
+            ci.position = new Vector2f();
+            ci.position.scaleAdd(a.radius - ci.depth/2, ci.normal, a.position);
+            return ci;
+        }
+
+        //edges
+        float[] distances2 = new float[3];
+        float minDist2 = 0;
+        int minDist2Index = 0;
+        boolean inside2 = true;
+        for(int i = 0; i < normal.length; i++) {
+            distances2[i] = normal[i].dot(a.position) - intercept[i] - a.radius;
+            if(distances2[i] < minDist2 && distances2[i] >= -a.radius) {
+                minDist2 = distances2[i];
+                minDist2Index = i;
+            }
+            if(distances2[i] >= 0) {
+                inside2 = false;
+            }
+        }
+
+        if(inside2) {
+            CollisionInfo ci = new CollisionInfo();
+            ci.normal = normal[minDist2Index];
+            ci.normal.normalize();
+            ci.depth = minDist2;
+            ci.position = new Vector2f();
+            ci.position.scaleAdd((a.radius - ci.depth), ci.normal, a.position);
+            return ci;
+        }
+
         return null;
     }
 	
