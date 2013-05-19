@@ -77,9 +77,11 @@ public class PhysicsDemo {
 		JFrame appFrame = new JFrame("Physics Demo");
 		appFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		appFrame.add(canvas3D);
+        canvas3D.setPreferredSize(new Dimension(800,600));
 		appFrame.pack();
-		if (Toolkit.getDefaultToolkit().isFrameStateSupported(JFrame.MAXIMIZED_BOTH))
-			appFrame.setExtendedState(appFrame.getExtendedState() | JFrame.MAXIMIZED_BOTH);
+        appFrame.setLocationRelativeTo(null);
+//		if (Toolkit.getDefaultToolkit().isFrameStateSupported(JFrame.MAXIMIZED_BOTH))
+//			appFrame.setExtendedState(appFrame.getExtendedState() | JFrame.MAXIMIZED_BOTH);
 		
 		canvas3D.addMouseMotionListener(new MouseMotionAdapter() {
 			private MouseEvent lastDragEvent;
@@ -162,4 +164,4 @@ public class PhysicsDemo {
 		
 		return shape;
 	}
-}
+}
