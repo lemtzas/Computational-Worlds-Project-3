@@ -132,7 +132,7 @@ public class CollisionHandler {
             n[i].scaleAdd( -1 , a.position , point[i] );
             pointDistance[i] = n[i].length() - a.radius;
 
-            if (pointDistance[i] < minPointDistance) { //assume this is the only point it's overlapping with
+            if (pointDistance[i] < minPointDistance) {
                 minPointDistance = pointDistance[i];
                 minPointDistanceIndex = i;
             }
