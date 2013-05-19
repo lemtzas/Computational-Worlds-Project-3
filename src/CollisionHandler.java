@@ -57,6 +57,8 @@ public class CollisionHandler {
 		} else if (a instanceof Circle) {
 			if (b instanceof Circle)
 				ci = getCollision((Circle)a, (Circle)b);
+            else if (b instanceof Triangle)
+                ci = getCollision((Circle)a, (Triangle)b);
 		} else if (a instanceof Triangle) {
 			if (b instanceof Triangle)
 				ci = getCollision((Triangle)a, (Triangle)b);
@@ -98,22 +100,77 @@ public class CollisionHandler {
 		ci.position.scaleAdd(ci.depth, ci.normal, ci.position);
 		return ci;
 	}
-	
-	private static CollisionInfo getCollision(Circle a, Circle b) {
-		Vector2f n = new Vector2f();
-		n.scaleAdd(-1, a.position, b.position);
-		float distance = n.length() - a.radius - b.radius;
-		if (distance < 0) {
-			CollisionInfo ci = new CollisionInfo();
-			n.normalize();
-			ci.normal = n;
-			ci.depth = -distance;
-			ci.position = new Vector2f();
-			ci.position.scaleAdd(a.radius - ci.depth / 2, ci.normal, a.position);
-			return ci;
-		}
-		return null;
-	}
+
+    private static CollisionInfo getCollision(Circle a, Circle b) {
+        Vector2f n = new Vector2f();
+        n.scaleAdd(-1, a.position, b.position);
+        float distance = n.length() - a.radius - b.radius;
+        if (distance < 0) {
+            CollisionInfo ci = new CollisionInfo();
+            n.normalize();
+            ci.normal = n;
+            ci.depth = -distance;
+            ci.position = new Vector2f();
+            ci.position.scaleAdd(a.radius - ci.depth / 2, ci.normal, a.position);
+            return ci;
+        }
+        return null;
+    }
+
+    /** Circle-Triangle Collision **/
+    private static CollisionInfo getCollision(Circle a, Triangle b) {
+        Vector2f[] normal = b.getNormals();
+        Vector2f[] point = b.getVertices();
+
+        //collide with corners
+        Vector2f n = new Vector2f();
+        for(int i = 0; i < point.length; i++) {
+            n.scaleAdd( -1 , a.position , point[i] );
+            float distance = n.length() - a.radius;
+
+            if (distance < 0) { //assume this is the only point it's overlapping with
+                CollisionInfo ci = new CollisionInfo();
+                n.normalize();
+                ci.normal = n;
+                ci.depth = -distance;
+                ci.position = new Vector2f();
+                ci.position.scaleAdd(a.radius - ci.depth / 2, ci.normal, a.position);
+                return ci;
+            }
+        }
+
+        //collide with edges
+        float[] intercept = new float[3];
+        float[] distances = new float[3];
+        boolean noCollision = false;
+        for(int i = 0; i < 3; i++) {
+            intercept[i] = point[i].dot(normal[i]);
+            distances[i] = normal[i].dot(a.position) - intercept[i] - a.radius;
+            if(distances[i] >= 0)
+                noCollision = true;
+        }
+
+        //select closest distance
+        float minDistance = distances[0];
+        int index = 0;
+        for(int i = 1; i < distances.length; i++) {
+            if(distances[i] < minDistance) {
+                index = i;
+                minDistance = distances[i];
+            }
+        }
+
+        if (!noCollision) {
+            System.out.println("collision " + minDistance);
+            CollisionInfo ci = new CollisionInfo();
+            ci.normal = normal[index];
+            ci.depth = -minDistance;
+            ci.position = new Vector2f();
+            ci.position.scaleAdd((a.radius - ci.depth / 2), ci.normal, a.position);
+            return ci;
+        }
+        return null;
+    }
 	
 	private static CollisionInfo getCollision(Triangle a, Triangle b) {
 		Vector2f[] verticesA = a.getVertices();

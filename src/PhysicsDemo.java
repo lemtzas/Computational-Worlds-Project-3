@@ -25,8 +25,8 @@ public class PhysicsDemo {
 	}
 
 	public PhysicsDemo() {
-		final int CIRCLES = 20;
-		final int TRIANGLES = 20;
+		final int CIRCLES = 1;
+		final int TRIANGLES = 1;
 		
 		boundaries = new HalfSpace[] {new HalfSpace(-EXTENT_WIDTH/2, -EXTENT_WIDTH/2, 0, 1),
 		                              new HalfSpace(-EXTENT_WIDTH/2, -EXTENT_WIDTH/2, 1, 0),
