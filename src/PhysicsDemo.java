@@ -32,7 +32,8 @@ public class PhysicsDemo {
 		                              new HalfSpace(-EXTENT_WIDTH/2, -EXTENT_WIDTH/2, 1, 0),
 		                              new HalfSpace(EXTENT_WIDTH/2, EXTENT_WIDTH/2, 0, -1),
 		                              new HalfSpace(EXTENT_WIDTH/2, EXTENT_WIDTH/2, -1, 0)};
-		objects = new PhysicsObject[CIRCLES + TRIANGLES];
+		int SQUARES = 1;
+		objects = new PhysicsObject[CIRCLES + TRIANGLES + SQUARES ];
 		int index = 0;
 		for (int i = 0; i < CIRCLES; i++)
 			objects[index++] = new Circle(1, (float)(Math.random() - .5) * EXTENT_WIDTH, (float)(Math.random() - .5) * EXTENT_WIDTH,
@@ -42,6 +43,10 @@ public class PhysicsDemo {
 			objects[index++] = new Triangle(1, (float)(Math.random() - .5) * EXTENT_WIDTH, (float)(Math.random() - .5) * EXTENT_WIDTH,
 			                                0, 0,
 			                                (float)(2 * Math.PI * Math.random()), 0, EXTENT_WIDTH * .1f, null);
+		for (int i = 0; i < SQUARES; i++)
+			objects[index++] = new Square(1, (float)(Math.random() - .5) * EXTENT_WIDTH, (float)(Math.random() - .5) * EXTENT_WIDTH,
+                    0, 0,
+                    0, 0, EXTENT_WIDTH * .03f, null, null);
 	}
 
 	private void createAndShowGUI() {
