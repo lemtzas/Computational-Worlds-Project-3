@@ -2,7 +2,7 @@ import javax.vecmath.*;
 
 public class CollisionHandler {
     private static final float COEFFICIENT_OF_RESTITUTION = 0.0f;
-    private static final float COEFFICIENT_OF_FRICTION = 10f;
+    private static final float COEFFICIENT_OF_FRICTION = 0f;
 	
 	public static void checkAndResolveCollision(PhysicsObject a, PhysicsObject b) {
 		CollisionInfo ci = getCollisionInfo(a, b);
