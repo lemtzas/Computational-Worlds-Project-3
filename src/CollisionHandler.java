@@ -1,7 +1,8 @@
 import javax.vecmath.*;
 
 public class CollisionHandler {
-	private static final float COEFFICIENT_OF_RESTITUTION = 0f;
+    private static final float COEFFICIENT_OF_RESTITUTION = 0.0f;
+    private static final float COEFFICIENT_OF_FRICTION = 10f;
 	
 	public static void checkAndResolveCollision(PhysicsObject a, PhysicsObject b) {
 		CollisionInfo ci = getCollisionInfo(a, b);
@@ -24,14 +25,39 @@ public class CollisionHandler {
 		v_bp1.y = b.velocity.y + b.angularVelocity * r_bp.x;
 		// The collision impulse
 		Vector2f v_ab1 = new Vector2f();
-		v_ab1.scaleAdd(-1, v_bp1, v_ap1);
+        v_ab1.scaleAdd(-1, v_bp1, v_ap1);
 		float tmpA = r_ap.x * ci.normal.y - r_ap.y * ci.normal.x;
 		float tmpB = r_bp.x * ci.normal.y - r_bp.y * ci.normal.x;
-		float j = -(1 + COEFFICIENT_OF_RESTITUTION) * v_ab1.dot(ci.normal) / (1 / a.mass + 1 / b.mass + tmpA * tmpA / a.momentOfInertia + tmpB * tmpB / b.momentOfInertia);
+		float j = -(1+COEFFICIENT_OF_RESTITUTION) * v_ab1.dot(ci.normal)
+                                    /
+                (1/a.mass  +  1/b.mass  +  tmpA*tmpA / a.momentOfInertia  +  tmpB*tmpB / b.momentOfInertia);
+        //friction vector
+        Vector2f n2 = new Vector2f(-ci.normal.y,ci.normal.x);
+        n2.scale(n2.dot(v_ab1),n2);
+        n2.normalize(); //this step sometimes produces NaNs, as the vector is 0.0 , 0.0
+        float friction = Math.abs(COEFFICIENT_OF_FRICTION * j);
 		// Update object a's velocity
-		a.velocity.scaleAdd(j / a.mass, ci.normal, a.velocity);
+        a.velocity.scaleAdd(j / a.mass, ci.normal, a.velocity);
 		// Update object b's velocity
 		b.velocity.scaleAdd(-j / b.mass, ci.normal, b.velocity);
+        //apply friction
+        if(!Float.isNaN(n2.x) && !Float.isNaN(n2.y)) { //make sure we can actually apply friction (object is moving perpendicular to collision)
+            float a_vel = a.velocity.dot(n2);
+            if(Math.abs(a_vel)  < friction / a.mass) { //limit friction delta-velocity to, at most, current velocity perpendicular to collision
+                a.velocity.scaleAdd(-a_vel , n2, a.velocity);
+            } else {
+                a.velocity.scaleAdd(-friction / a.mass , n2, a.velocity);
+            }
+            float b_vel = b.velocity.dot(n2);
+            if(Math.abs(b_vel) < friction / b.mass) {  //limit friction delta-velocity to, at most, current velocity perpendicular to collision
+                b.velocity.scaleAdd(-b_vel, n2, b.velocity);
+                System.out.println("a");
+            } else {
+                b.velocity.scaleAdd(-friction / b.mass , n2, b.velocity);
+            }
+            System.out.println(friction / a.mass + " " + friction / b.mass);
+            System.out.println(a_vel + "-" + b_vel);
+        }
 		// Update object a's angular velocity
 		a.angularVelocity += j * (r_ap.x * ci.normal.y - r_ap.y * ci.normal.x) / a.momentOfInertia;
 		// Update object b's angular velocity
