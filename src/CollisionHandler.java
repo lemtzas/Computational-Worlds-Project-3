@@ -2,7 +2,7 @@ import javax.vecmath.*;
 
 public class CollisionHandler {
     private static final float COEFFICIENT_OF_RESTITUTION = 0.0f;
-    private static final float COEFFICIENT_OF_FRICTION = 0f;
+    private static final float COEFFICIENT_OF_FRICTION = 0.02f;
 	
 	public static void checkAndResolveCollision(PhysicsObject a, PhysicsObject b) {
 		CollisionInfo ci = getCollisionInfo(a, b);
@@ -31,17 +31,23 @@ public class CollisionHandler {
 		float j = -(1+COEFFICIENT_OF_RESTITUTION) * v_ab1.dot(ci.normal)
                                     /
                 (1/a.mass  +  1/b.mass  +  tmpA*tmpA / a.momentOfInertia  +  tmpB*tmpB / b.momentOfInertia);
-        //friction vector
+        //the friction impulse
         Vector2f n2 = new Vector2f(-ci.normal.y,ci.normal.x);
-        n2.scale(n2.dot(v_ab1),n2);
+        n2.scale(n2.dot(v_ab1),n2); //point it in the right direction
         n2.normalize(); //this step sometimes produces NaNs, as the vector is 0.0 , 0.0
-        float friction = Math.abs(COEFFICIENT_OF_FRICTION * j);
+        float j2 = -(1+COEFFICIENT_OF_RESTITUTION) * v_ab1.dot(n2)
+                /
+                (1/a.mass  +  1/b.mass  +  tmpA*tmpA / a.momentOfInertia  +  tmpB*tmpB / b.momentOfInertia);
+
+
+        float friction = -Math.abs(j2 * COEFFICIENT_OF_FRICTION);
 		// Update object a's velocity
         a.velocity.scaleAdd(j / a.mass, ci.normal, a.velocity);
 		// Update object b's velocity
 		b.velocity.scaleAdd(-j / b.mass, ci.normal, b.velocity);
         //apply friction
         if(!Float.isNaN(n2.x) && !Float.isNaN(n2.y)) { //make sure we can actually apply friction (object is moving perpendicular to collision)
+            //to velocity
             float a_vel = a.velocity.dot(n2);
             if(Math.abs(a_vel)  < friction / a.mass) { //limit friction delta-velocity to, at most, current velocity perpendicular to collision
                 a.velocity.scaleAdd(-a_vel , n2, a.velocity);
@@ -51,12 +57,16 @@ public class CollisionHandler {
             float b_vel = b.velocity.dot(n2);
             if(Math.abs(b_vel) < friction / b.mass) {  //limit friction delta-velocity to, at most, current velocity perpendicular to collision
                 b.velocity.scaleAdd(-b_vel, n2, b.velocity);
-                System.out.println("a");
+//                System.out.println("a");
             } else {
                 b.velocity.scaleAdd(-friction / b.mass , n2, b.velocity);
             }
-            System.out.println(friction / a.mass + " " + friction / b.mass);
-            System.out.println(a_vel + "-" + b_vel);
+
+
+
+
+//            System.out.println(friction / a.mass + " " + friction / b.mass);
+//            System.out.println(a_vel + "-" + b_vel);
         }
 		// Update object a's angular velocity
 		a.angularVelocity += j * (r_ap.x * ci.normal.y - r_ap.y * ci.normal.x) / a.momentOfInertia;
@@ -78,16 +88,16 @@ public class CollisionHandler {
 		if (a instanceof HalfSpace) {
 			if (b instanceof Circle)
 				ci = getCollision((HalfSpace)a, (Circle)b);
-			else if (b instanceof Triangle)
-				ci = getCollision((HalfSpace)a, (Triangle)b);
+			else if (b instanceof ConvexPolygon)
+				ci = getCollision((HalfSpace)a, (ConvexPolygon)b);
 		} else if (a instanceof Circle) {
 			if (b instanceof Circle)
 				ci = getCollision((Circle)a, (Circle)b);
-            else if (b instanceof Triangle)
-                ci = getCollision((Circle)a, (Triangle)b);
-		} else if (a instanceof Triangle) {
-			if (b instanceof Triangle)
-				ci = getCollision((Triangle)a, (Triangle)b);
+            else if (b instanceof ConvexPolygon)
+                ci = getCollision((Circle)a, (ConvexPolygon)b);
+		} else if (a instanceof ConvexPolygon) {
+			if (b instanceof ConvexPolygon)
+				ci = getCollision((ConvexPolygon)a, (ConvexPolygon)b);
 		}
 		return ci;
 	}
@@ -105,7 +115,8 @@ public class CollisionHandler {
 		return null;
 	}
 	
-	private static CollisionInfo getCollision(HalfSpace a, Triangle b) {
+	private static CollisionInfo getCollision(HalfSpace a, ConvexPolygon b) {
+        System.out.println(b.getClass().getName());
 		Vector2f[] vertices = b.getVertices();
 		float[] distances = new float[vertices.length];
 		
@@ -116,6 +127,7 @@ public class CollisionHandler {
 		for (int i = 1; i < distances.length; i++)
 			if (distances[i] < distances[minIndex])
 				minIndex = i;
+        System.out.println(distances[minIndex]);
 		if (distances[minIndex] >= 0)
 			return null;
 		
@@ -144,19 +156,19 @@ public class CollisionHandler {
     }
 
     /** Circle-Triangle Collision **/
-    private static CollisionInfo getCollision(Circle a, Triangle b) {
+    private static CollisionInfo getCollision(Circle a, ConvexPolygon b) {
         Vector2f[] normal = b.getNormals();
         Vector2f[] point = b.getVertices();
-        float[] pointDistance = new float[3];
+        float[] pointDistance = new float[point.length];
         float minPointDistance = Float.POSITIVE_INFINITY;
         int minPointDistanceIndex = 0;
 
         //corners
-        Vector2f[] n = new Vector2f[3];
+        Vector2f[] n = new Vector2f[point.length];
         for(int i = 0; i < point.length; i++) {
             n[i] = new Vector2f();
             n[i].scaleAdd( -1 , a.position , point[i] );
-            pointDistance[i] = n[i].length() - a.radius;
+            pointDistance[i] = n[i].length();// - a.radius;
 
             if (pointDistance[i] < minPointDistance) {
                 minPointDistance = pointDistance[i];
@@ -175,8 +187,8 @@ public class CollisionHandler {
 
         //inside
         boolean inside = true;
-        float[] intercept = new float[3];
-        float[] distances = new float[3];
+        float[] intercept = new float[point.length];
+        float[] distances = new float[point.length];
         for(int i = 0; i < normal.length; i++) {
             intercept[i] = normal[i].dot(point[i]);
             distances[i] = normal[i].dot(a.position) - intercept[i];// + a.radius;
@@ -197,7 +209,7 @@ public class CollisionHandler {
         }
 
         //edges
-        float[] distances2 = new float[3];
+        float[] distances2 = new float[point.length];
         float minDist2 = 0;
         int minDist2Index = 0;
         boolean inside2 = true;
@@ -225,7 +237,7 @@ public class CollisionHandler {
         return null;
     }
 	
-	private static CollisionInfo getCollision(Triangle a, Triangle b) {
+	private static CollisionInfo getCollision(ConvexPolygon a, ConvexPolygon b) {
 		Vector2f[] verticesA = a.getVertices();
 		Vector2f[] normalsA = a.getNormals();
 		Vector2f[] verticesB = b.getVertices();
