@@ -1,2 +1,7 @@
 # intellij project files #
 /idea/
+
+# Eclipse project files
+/bin/
+.classpath
+.project
