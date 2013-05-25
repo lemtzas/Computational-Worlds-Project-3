@@ -26,22 +26,30 @@ public class PhysicsDemo {
 
 	public PhysicsDemo() {
 		final int CIRCLES = 50;
-		final int TRIANGLES = 1;
+        final int TRIANGLES = 1;
+        final int REGULAR_CONVEX_POLYGONS = 1;
+        final int RCP_MIN_SIDES = 3;
+        final int RCP_MAX_SIDES = 3;
 		
 		boundaries = new HalfSpace[] {new HalfSpace(-EXTENT_WIDTH/2, -EXTENT_WIDTH/2, 0, 1),
 		                              new HalfSpace(-EXTENT_WIDTH/2, -EXTENT_WIDTH/2, 1, 0),
 		                              new HalfSpace(EXTENT_WIDTH/2, EXTENT_WIDTH/2, 0, -1),
 		                              new HalfSpace(EXTENT_WIDTH/2, EXTENT_WIDTH/2, -1, 0)};
-		objects = new PhysicsObject[CIRCLES + TRIANGLES];
+		objects = new PhysicsObject[CIRCLES + TRIANGLES + REGULAR_CONVEX_POLYGONS];
 		int index = 0;
 		for (int i = 0; i < CIRCLES; i++)
 			objects[index++] = new Circle(1, (float)(Math.random() - .5) * EXTENT_WIDTH, (float)(Math.random() - .5) * EXTENT_WIDTH,
 			                              0, 0,
 			                              0, 0, EXTENT_WIDTH * .03f, null, null);
-		for (int i = 0; i < TRIANGLES; i++)
-			objects[index++] = new Triangle(1, (float)(Math.random() - .5) * EXTENT_WIDTH, (float)(Math.random() - .5) * EXTENT_WIDTH,
-			                                0, 0,
-			                                (float)(2 * Math.PI * Math.random()), 0, EXTENT_WIDTH * .1f, null);
+        for (int i = 0; i < TRIANGLES; i++)
+            objects[index++] = new Triangle(1, (float)(Math.random() - .5) * EXTENT_WIDTH, (float)(Math.random() - .5) * EXTENT_WIDTH,
+                    0, 0,
+                    (float)(2 * Math.PI * Math.random()), 0, EXTENT_WIDTH * .1f, null);
+        for (int i = 0; i < REGULAR_CONVEX_POLYGONS; i++)
+            objects[index++] = new RegularConvexPolygon((int)(Math.round(Math.random()*(RCP_MAX_SIDES-RCP_MIN_SIDES)+RCP_MIN_SIDES)),
+                    1f, 1, (float)(Math.random() - .5) * EXTENT_WIDTH, (float)(Math.random() - .5) * EXTENT_WIDTH,
+                    0, 0,
+                    (float)(2 * Math.PI * Math.random()), 0, null);
 	}
 
 	private void createAndShowGUI() {
